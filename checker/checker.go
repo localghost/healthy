@@ -5,6 +5,7 @@ import (
 	"github.com/localghost/healthy/utils"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Checker struct {
@@ -28,6 +29,10 @@ type metric struct {
 	value error
 }
 
+var checkFunctions = map[string]func (map[string]interface{}) error {
+	"http": httpCheck,
+}
+
 func New(checks interface{}) *Checker {
 	result := &Checker{
 		metrics: make(map[string]error),
@@ -49,17 +54,19 @@ func (c *Checker) parseChecks(checks interface{}) {
 			Options: check1.(map[string]interface{}),
 		}
 	}
-	log.Println(c.checks)
 }
 
 func (c *Checker) startChecks() {
 	receiver := make(chan metric)
 	for name, ch := range c.checks {
-		go func(name string, ch check) {
-			if ch.Type == "http" {
-				receiver <- metric{name, httpCheck(ch.Options["url"].(string))}
+		go func(name string, ch check, checkFunction func (map[string]interface{}) error) {
+			for {
+				select {
+				case <- time.After(10 * time.Second):
+					receiver <- metric{name, checkFunction(ch.Options)}
+				}
 			}
-		}(name, ch)
+		}(name, ch, checkFunctions[ch.Type])
 	}
 	go func() {
 		for {
@@ -87,8 +94,9 @@ func (c *Checker) Check(name string) error {
 	return <- response
 }
 
-func httpCheck(url string) error {
-	response, err := http.Get(url)
+func httpCheck(options map[string]interface{}) error {
+	log.Println("checking url:", options["url"].(string))
+	response, err := http.Get(options["url"].(string))
 	if err != nil {
 		return err
 	}

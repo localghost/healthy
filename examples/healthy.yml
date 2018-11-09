@@ -1,0 +1,11 @@
+server:
+  port: 8199
+  address: 127.0.0.1
+
+checks:
+  bazinga:
+    type: http
+    url: http://bazinga
+  google:
+    type: http
+    url: http://google.com
