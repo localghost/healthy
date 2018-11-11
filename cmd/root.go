@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
+	"strings"
 )
 
 var rootCmd = &cobra.Command{
@@ -28,10 +29,8 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(readConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: ./healthy.yml)")
-	rootCmd.Flags().String("address", "127.0.0.1", "address to listen on")
-	rootCmd.Flags().Int("port",  8199, "port to listen on")
-	viper.BindPFlag("server.port", rootCmd.Flags().Lookup("port"))
-	viper.BindPFlag("server.address", rootCmd.Flags().Lookup("address"))
+	rootCmd.Flags().String("listen_on", "127.0.0.1:8199", "address to listen on")
+	viper.BindPFlag("server.listen_on", rootCmd.Flags().Lookup("listen_on"))
 }
 
 func readConfig() {
@@ -44,6 +43,7 @@ func readConfig() {
 	}
 
 	viper.SetEnvPrefix("HEALTHY")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {

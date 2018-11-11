@@ -1,13 +1,12 @@
 package server
 
 import (
-	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/localghost/healthy/checker"
 	"github.com/localghost/healthy/utils"
 	"github.com/spf13/viper"
 	"log"
 	"net/http"
-	"github.com/localghost/healthy/checker"
 )
 
 type Server struct {
@@ -28,11 +27,11 @@ func (s *Server) setup() {
 	s.router = mux.NewRouter()
 
 	v1 := s.router.PathPrefix("/v1/").Subrouter()
-	v1.HandleFunc("/healthy/check/{healthcheck}", s.healthCheck)
+	v1.HandleFunc("/check/{name}", s.healthCheck)
 
 	s.server = &http.Server{
 		Handler: s.router,
-		Addr: fmt.Sprintf("%s:%d", viper.Get("server.address"), viper.Get("server.port")),
+		Addr: viper.Get("server.listen_on").(string),
 	}
 }
 
@@ -44,7 +43,7 @@ func (s *Server) Start() error {
 func (s *Server) healthCheck(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 
-	if checkError := s.checker.Check(vars["healthcheck"]); checkError != nil {
+	if checkError := s.checker.Check(vars["name"]); checkError != nil {
 		switch checkError.(type) {
 		case utils.NoSuchCheckError:
 			response.WriteHeader(http.StatusNotFound)
