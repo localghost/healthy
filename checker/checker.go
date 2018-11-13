@@ -1,15 +1,12 @@
 package checker
 
 import (
-	"fmt"
 	"github.com/localghost/healthy/utils"
-	"log"
-	"net/http"
 	"time"
 )
 
 type Checker struct {
-	checks map[string]check
+	checks map[string]Check
 	metrics map[string]error
 	request chan request
 }
@@ -19,22 +16,14 @@ type request struct {
 	response chan error
 }
 
-type check struct {
-	Type string
-	Options map[string]interface{}
-}
-
 type metric struct {
 	name string
 	value error
 }
 
-var checkFunctions = map[string]func (map[string]interface{}) error {
-	"http": httpCheck,
-}
-
 func New(checks interface{}) *Checker {
 	result := &Checker{
+		checks: make(map[string]Check),
 		metrics: make(map[string]error),
 		request: make(chan request),
 	}
@@ -47,26 +36,24 @@ func (c *Checker) Start() {
 }
 
 func (c *Checker) parseChecks(checks interface{}) {
-	c.checks = make(map[string]check)
-	for name, check1 := range checks.(map[string]interface{}) {
-		c.checks[name] = check{
-			Type: (check1.(map[string]interface{}))["type"].(string),
-			Options: check1.(map[string]interface{}),
-		}
+	for name, check := range checks.(map[string]interface{}) {
+		ctype := (check.(map[string]interface{}))["type"].(string)
+		options := check.(map[string]interface{})
+		c.checks[name] = registry.CreateAndConfigure(ctype, options)
 	}
 }
 
 func (c *Checker) startChecks() {
 	receiver := make(chan metric)
-	for name, ch := range c.checks {
-		go func(name string, ch check, checkFunction func (map[string]interface{}) error) {
+	for name, check := range c.checks {
+		go func(name string, check Check) {
 			for {
 				select {
 				case <- time.After(10 * time.Second):
-					receiver <- metric{name, checkFunction(ch.Options)}
+					receiver <- metric{name, check.Run()}
 				}
 			}
-		}(name, ch, checkFunctions[ch.Type])
+		}(name, check)
 	}
 	go func() {
 		for {
@@ -88,22 +75,8 @@ func (c *Checker) startChecks() {
 func (c *Checker) Check(name string) error {
 	response := make(chan error)
 	c.request <- request{
-		name: name,
+		name:     name,
 		response: response,
 	}
-	return <- response
-}
-
-func httpCheck(options map[string]interface{}) error {
-	log.Println("checking url:", options["url"].(string))
-	response, err := http.Get(options["url"].(string))
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode >= 400 {
-		return fmt.Errorf("Invalid status code")
-	}
-	return nil
+	return <-response
 }
