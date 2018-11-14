@@ -10,19 +10,23 @@ type CheckRegistry struct {
 	providers map[string]func () Check
 }
 
+func NewCheckRegistry() *CheckRegistry {
+	return &CheckRegistry{
+		providers: make(map[string]func () Check),
+	}
+}
+
 func (r *CheckRegistry) Add(name string, provider func() Check) {
 	r.providers[name] = provider
 }
 
-func (r *CheckRegistry) CreateAndConfigure(name string, options map[string]interface{}) Check{
+func (r *CheckRegistry) CreateAndConfigure(name string, options map[string]interface{}) Check {
 	provider := r.providers[name]()
-	provider.Configure(options)
+	provider.Configure(options) // TODO check for error
 	return provider
 }
 
-var registry = CheckRegistry{
-	providers: make(map[string]func () Check),
-}
+var registry = NewCheckRegistry()
 
 func init() {
 	registry.Add("http", NewHttpCheck)
