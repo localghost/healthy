@@ -8,12 +8,8 @@ import (
 type Checker struct {
 	checks map[string]Check
 	metrics map[string]error
-	request chan request
-}
-
-type request struct {
-	name string
-	response chan error
+	request chan string
+	responses map[string]chan error
 }
 
 type metric struct {
@@ -25,7 +21,8 @@ func New(checks interface{}) *Checker {
 	result := &Checker{
 		checks: make(map[string]Check),
 		metrics: make(map[string]error),
-		request: make(chan request),
+		request: make(chan string),
+		responses: make(map[string]chan error),
 	}
 	result.parseChecks(checks)
 	return result
@@ -40,6 +37,7 @@ func (c *Checker) parseChecks(checks interface{}) {
 		ctype := (check.(map[string]interface{}))["type"].(string)
 		options := check.(map[string]interface{})
 		c.checks[name] = registry.CreateAndConfigure(ctype, options)
+		c.responses[name] = make(chan error)
 	}
 }
 
@@ -60,12 +58,12 @@ func (c *Checker) startChecks() {
 			select {
 			case m := <-receiver:
 				c.metrics[m.name] = m.value
-			case r := <- c.request:
-				err, ok := c.metrics[r.name]
+			case name := <- c.request:
+				err, ok := c.metrics[name]
 				if !ok {
-					r.response <- utils.NewNoSuchCheckError(r.name)
+					c.responses[name] <- utils.NewNoSuchCheckError(name)
 				} else {
-					r.response <- err
+					c.responses[name] <- err
 				}
 			}
 		}
@@ -73,10 +71,6 @@ func (c *Checker) startChecks() {
 }
 
 func (c *Checker) Check(name string) error {
-	response := make(chan error)
-	c.request <- request{
-		name:     name,
-		response: response,
-	}
-	return <-response
+	c.request <- name
+	return <-c.responses[name]
 }
