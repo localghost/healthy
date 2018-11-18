@@ -8,3 +8,8 @@ checks:
   google:
     type: http
     url: http://google.com
+  dns:
+    type: dial
+    protocol: udp
+    address: 8.8.8.8:53
+    timeout: 5
