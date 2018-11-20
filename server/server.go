@@ -28,6 +28,7 @@ func (s *Server) setup() {
 
 	v1 := s.router.PathPrefix("/v1/").Subrouter()
 	v1.HandleFunc("/check/{name}", s.healthCheck)
+	v1.HandleFunc("/status", s.statusCheck)
 
 	s.server = &http.Server{
 		Handler: s.router,
@@ -43,7 +44,7 @@ func (s *Server) Start() error {
 func (s *Server) healthCheck(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 
-	if checkError := s.checker.Check(vars["name"]); checkError != nil {
+	if checkError := s.checker.Get(vars["name"]); checkError != nil {
 		switch checkError.(type) {
 		case utils.NoSuchCheckError:
 			response.WriteHeader(http.StatusNotFound)
@@ -51,6 +52,15 @@ func (s *Server) healthCheck(response http.ResponseWriter, request *http.Request
 			response.WriteHeader(http.StatusExpectationFailed)
 		}
 		response.Write([]byte(checkError.Error()))
+	} else {
+		response.WriteHeader(http.StatusOK)
+	}
+}
+
+func (s *Server) statusCheck(response http.ResponseWriter, request *http.Request) {
+	if err := s.checker.GetAll(); err != nil {
+		response.WriteHeader(http.StatusExpectationFailed)
+		response.Write([]byte(err.Error()))
 	} else {
 		response.WriteHeader(http.StatusOK)
 	}

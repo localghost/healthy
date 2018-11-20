@@ -70,7 +70,16 @@ func (c *Checker) startChecks() {
 	}()
 }
 
-func (c *Checker) Check(name string) error {
+func (c *Checker) Get(name string) error {
 	c.request <- name
 	return <-c.responses[name]
+}
+
+func (c* Checker) GetAll() error {
+	for name := range c.checks {
+		if err := c.Get(name); err != nil {
+			return err
+		}
+	}
+	return nil
 }
