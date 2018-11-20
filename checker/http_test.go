@@ -21,3 +21,17 @@ func TestNonExistingUrl(t *testing.T) {
 		t.Fatal("Expected check to fail but it succeeded.")
 	}
 }
+
+func TestMissingUrl(t *testing.T) {
+	check := NewHttpCheck()
+	if err := check.Configure(map[string]interface{}{}); err == nil {
+		t.Fatal("Expected check to fail but it succeeded.")
+	}
+}
+
+func TestUrlInvalidType(t *testing.T) {
+	check := NewHttpCheck()
+	if err := check.Configure(map[string]interface{}{"url": 42}); err == nil {
+		t.Fatal("Expected check to fail but it succeeded.")
+	}
+}

@@ -15,7 +15,10 @@ func NewHttpCheck() Check {
 }
 
 func (c *HttpCheck) Configure(options map[string]interface{}) error {
-	c.url = options["url"].(string)
+	var ok bool
+	if c.url, ok = options["url"].(string); !ok {
+		return fmt.Errorf("invalid or missing url")
+	}
 	return nil
 }
 
@@ -28,7 +31,7 @@ func (c *HttpCheck) Run() error {
 	defer response.Body.Close()
 
 	if response.StatusCode >= 400 {
-		return fmt.Errorf("Invalid status code")
+		return fmt.Errorf("invalid status code")
 	}
 	return nil
 }
