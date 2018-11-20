@@ -13,3 +13,6 @@ checks:
     protocol: udp
     address: 8.8.8.8:53
     timeout: 5
+  local_file:
+    type: command
+    command: find /tmp

@@ -31,5 +31,6 @@ var registry = NewCheckRegistry()
 func init() {
 	registry.Add("http", NewHttpCheck)
 	registry.Add("dial", NewDialCheck)
+	registry.Add("command" , NewCommandCheck)
 }
 
