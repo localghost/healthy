@@ -13,6 +13,11 @@ checks:
     protocol: udp
     address: 8.8.8.8:53
     timeout: 5
-  local_file:
+  sh:
     type: command
-    command: find /tmp
+    command:
+      - echo
+  bash:
+    type: command
+    command: "[[ true ]] && echo"
+    shell: bash
