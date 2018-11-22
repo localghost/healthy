@@ -41,4 +41,3 @@ func init() {
 	registry.Add("dial", NewDialCheck)
 	registry.Add("command" , NewCommandCheck)
 }
-
