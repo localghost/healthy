@@ -1,5 +1,7 @@
 package checker
 
+import "fmt"
+
 type Check interface {
 	Configure(options map[string]interface{}) error
 
@@ -20,10 +22,16 @@ func (r *CheckRegistry) Add(name string, provider func() Check) {
 	r.providers[name] = provider
 }
 
-func (r *CheckRegistry) CreateAndConfigure(name string, options map[string]interface{}) Check {
-	provider := r.providers[name]()
-	provider.Configure(options) // TODO check for error
-	return provider
+func (r *CheckRegistry) CreateAndConfigure(name string, options map[string]interface{}) (Check, error) {
+	if provider, ok := r.providers[name]; !ok {
+		return nil, fmt.Errorf("check type %s is not supported", name)
+	} else {
+		check := provider()
+		if err := check.Configure(options); err != nil {
+			return nil, err
+		}
+		return check, nil
+	}
 }
 
 var registry = NewCheckRegistry()

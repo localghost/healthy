@@ -17,28 +17,34 @@ type metric struct {
 	value error
 }
 
-func New(checks interface{}) *Checker {
+func New(checks interface{}) (*Checker, error) {
 	result := &Checker{
 		checks: make(map[string]Check),
 		metrics: make(map[string]error),
 		request: make(chan string),
 		responses: make(map[string]chan error),
 	}
-	result.parseChecks(checks)
-	return result
+	if err := result.parseChecks(checks); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (c *Checker) Start() {
 	c.startChecks()
 }
 
-func (c *Checker) parseChecks(checks interface{}) {
+func (c *Checker) parseChecks(checks interface{}) error {
+	var err error
 	for name, check := range checks.(map[string]interface{}) {
 		ctype := (check.(map[string]interface{}))["type"].(string)
 		options := check.(map[string]interface{})
-		c.checks[name] = registry.CreateAndConfigure(ctype, options)
+		if c.checks[name], err = registry.CreateAndConfigure(ctype, options); err != nil {
+			return err
+		}
 		c.responses[name] = make(chan error)
 	}
+	return nil
 }
 
 func (c *Checker) startChecks() {

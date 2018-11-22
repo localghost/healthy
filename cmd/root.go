@@ -13,7 +13,10 @@ var rootCmd = &cobra.Command{
 	Use: "healthy",
 	Short: "Light health checker with HTTP REST API",
 	Run: func(cmd *cobra.Command, args []string) {
-		checker := checker.New(viper.Get("checks"))
+		checker, err := checker.New(viper.Get("checks"))
+		if err != nil {
+			panic(err)
+		}
 		checker.Start()
 
 		server.New(checker).Start()
