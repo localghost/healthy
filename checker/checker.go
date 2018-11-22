@@ -2,14 +2,26 @@ package checker
 
 import (
 	"github.com/localghost/healthy/utils"
+	"github.com/spf13/viper"
 	"time"
 )
 
 type Checker struct {
-	checks map[string]Check
-	metrics map[string]error
-	request chan string
+	tasks     map[string]*Task
+	metrics   map[string]error
+	request   chan string
 	responses map[string]chan error
+	interval  time.Duration
+}
+
+type Spec struct {
+	Type string
+	Interval time.Duration
+}
+
+type Task struct {
+	spec  Spec
+	check Check
 }
 
 type metric struct {
@@ -19,10 +31,11 @@ type metric struct {
 
 func New(checks interface{}) (*Checker, error) {
 	result := &Checker{
-		checks: make(map[string]Check),
-		metrics: make(map[string]error),
-		request: make(chan string),
+		tasks:     make(map[string]*Task),
+		metrics:   make(map[string]error),
+		request:   make(chan string),
 		responses: make(map[string]chan error),
+		interval:  viper.GetDuration("checker.interval"),
 	}
 	if err := result.parseChecks(checks); err != nil {
 		return nil, err
@@ -35,29 +48,43 @@ func (c *Checker) Start() {
 }
 
 func (c *Checker) parseChecks(checks interface{}) error {
-	var err error
+	var specs = make(map[string]Spec)
+	if err := utils.Decode(checks, &specs); err != nil {
+		return err
+	}
+
 	for name, check := range checks.(map[string]interface{}) {
-		ctype := (check.(map[string]interface{}))["type"].(string)
 		options := check.(map[string]interface{})
-		if c.checks[name], err = registry.CreateAndConfigure(ctype, options); err != nil {
+		if check, err := registry.CreateAndConfigure(specs[name].Type, options); err != nil {
 			return err
+		} else {
+			c.tasks[name] = &Task{
+				spec:  specs[name],
+				check: check,
+			}
+			c.responses[name] = make(chan error)
 		}
-		c.responses[name] = make(chan error)
 	}
 	return nil
 }
 
 func (c *Checker) startChecks() {
 	receiver := make(chan metric)
-	for name, check := range c.checks {
-		go func(name string, check Check) {
+	for name, tasks := range c.tasks {
+		var interval time.Duration
+		if tasks.spec.Interval != time.Duration(0) {
+			interval = tasks.spec.Interval
+		} else {
+			interval = c.interval
+		}
+		go func(name string, check Check, interval time.Duration) {
 			for {
 				select {
-				case <- time.After(10 * time.Second):
+				case <- time.After(interval):
 					receiver <- metric{name, check.Run()}
 				}
 			}
-		}(name, check)
+		}(name, tasks.check, interval)
 	}
 	go func() {
 		for {
@@ -82,7 +109,7 @@ func (c *Checker) Get(name string) error {
 }
 
 func (c* Checker) GetAll() error {
-	for name := range c.checks {
+	for name := range c.tasks {
 		if err := c.Get(name); err != nil {
 			return err
 		}

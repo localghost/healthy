@@ -9,9 +9,9 @@ import (
 )
 
 type DialCheck struct {
-	protocol string
-	address string
-	timeout time.Duration
+	Protocol string
+	Address string
+	Timeout time.Duration
 }
 
 var protocols = map[string]struct{} {
@@ -22,36 +22,27 @@ var protocols = map[string]struct{} {
 }
 
 func NewDialCheck() Check {
-	return &DialCheck{}
+	return &DialCheck{
+		Protocol: "tcp",
+		Timeout: 10 * time.Second,
+	}
 }
 
 func (d* DialCheck) Configure(options map[string]interface{}) error {
-	var ok bool
-	var address, protocol string
-	var timeout int
-
-	if address, ok = options["address"].(string); !ok {
-		return fmt.Errorf("address not defined")
+	if err := utils.Decode(options, d); err != nil {
+		return err
 	}
-	if protocol, ok = utils.WithDefault(options, "protocol", "tcp").(string); !ok {
-		return fmt.Errorf("invalid protocol format")
+	if _, ok := protocols[d.Protocol]; !ok {
+		return fmt.Errorf("unsupported protocol %s", d.Protocol)
 	}
-	if _, ok = protocols[protocol]; !ok {
-		return fmt.Errorf("unsupported protocol %s", protocol)
+	if d.Address == "" {
+		return fmt.Errorf("address is not set")
 	}
-	if timeout, ok = utils.WithDefault(options, "timeout", 10).(int); !ok {
-		return fmt.Errorf("invalid timeout %v", timeout)
-	}
-
-	d.address = address
-	d.protocol = protocol
-	d.timeout = time.Duration(timeout) * time.Second
-
 	return nil
 }
 
 func (d* DialCheck) Run() error {
-	conn, err := net.DialTimeout(d.protocol, d.address, d.timeout)
+	conn, err := net.DialTimeout(d.Protocol, d.Address, d.Timeout)
 	if err != nil {
 		return err
 	}

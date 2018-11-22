@@ -8,37 +8,39 @@ import (
 )
 
 type CommandCheck struct {
+	Command interface{}
+	Shell string
+
 	command []string
 }
 
 func NewCommandCheck() Check {
-	return &CommandCheck{}
+	return &CommandCheck{
+		Shell: "sh",
+	}
 }
 
 func (c *CommandCheck) Configure(options map[string]interface{}) error {
-	var ok bool
-
-	var shell string
-	if shell, ok = utils.WithDefault(options, "shell", "sh").(string); !ok {
-		return fmt.Errorf("invalid shell provided")
+	if err := utils.Decode(options, c); err != nil {
+		return err
 	}
 
-	var command []string
-	switch options["command"].(type) {
+	switch c.Command.(type) {
 	case string:
-		command = []string{shell, "-c", options["command"].(string)}
+		c.command = []string{c.Shell, "-c", c.Command.(string)}
 	case []interface{}:
-		for _, arg := range options["command"].([]interface{}) {
+		var command []string
+		for _, arg := range c.Command.([]interface{}) {
 			if argstr, ok := arg.(string); !ok {
 				return fmt.Errorf("invalid command argument: %v", arg)
 			} else {
 				command = append(command, argstr)
 			}
 		}
+		c.command = command
 	default:
 		return fmt.Errorf("command format is not supported")
 	}
-	c.command = command
 	return nil
 }
 

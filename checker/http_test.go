@@ -29,9 +29,16 @@ func TestMissingUrl(t *testing.T) {
 	}
 }
 
-func TestUrlInvalidType(t *testing.T) {
+func TestInvalidUrlType(t *testing.T) {
 	check := NewHttpCheck()
 	if err := check.Configure(map[string]interface{}{"url": 42}); err == nil {
+		t.Fatal("Expected check to fail but it succeeded.")
+	}
+}
+
+func TestInvalidUrl(t *testing.T) {
+	check := NewHttpCheck()
+	if err := check.Configure(map[string]interface{}{"url": "invalid_url : 7777"}); err == nil {
 		t.Fatal("Expected check to fail but it succeeded.")
 	}
 }

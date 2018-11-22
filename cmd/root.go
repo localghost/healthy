@@ -34,6 +34,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: ./healthy.yml)")
 	rootCmd.Flags().String("listen_on", "127.0.0.1:8199", "address to listen on")
 	viper.BindPFlag("server.listen_on", rootCmd.Flags().Lookup("listen_on"))
+	viper.SetDefault("checker.timeout", "10s")
 }
 
 func readConfig() {

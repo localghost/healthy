@@ -6,7 +6,7 @@ func TestTcp(t *testing.T) {
 	options := map[string]interface{}{
 		"protocol": "tcp",
 		"address": "8.8.8.8:53",
-		"timeout": 5,
+		"interval": "5s",
 	}
 	check := NewDialCheck()
 	if err := check.Configure(options); err != nil {
@@ -21,7 +21,7 @@ func TestUdp(t *testing.T) {
 	options := map[string]interface{}{
 		"protocol": "udp",
 		"address": "8.8.4.4:53",
-		"timeout": 5,
+		"interval": "5s",
 	}
 	check := NewDialCheck()
 	if err := check.Configure(options); err != nil {
@@ -35,7 +35,7 @@ func TestUdp(t *testing.T) {
 func TestDefaultProtocol(t *testing.T) {
 	options := map[string]interface{}{
 		"address": "8.8.8.8:53",
-		"timeout": 5,
+		"interval": "5s",
 	}
 	check := NewDialCheck()
 	if err := check.Configure(options); err != nil {
@@ -64,7 +64,7 @@ func TestInvalidProtocol(t *testing.T) {
 	options := map[string]interface{}{
 		"protocol": "invalid",
 		"address": "8.8.4.4:53",
-		"timeout": 5,
+		"interval": "5s",
 	}
 	check := NewDialCheck()
 	if err := check.Configure(options); err == nil {
@@ -76,7 +76,7 @@ func TestInvalidAddress(t *testing.T) {
 	options := map[string]interface{}{
 		"protocol": "tcp",
 		"address": "invalid-address and port",
-		"timeout": 5,
+		"interval": "5s",
 	}
 	check := NewDialCheck()
 	if err := check.Configure(options); err != nil {
@@ -90,7 +90,7 @@ func TestInvalidAddress(t *testing.T) {
 func TestMissingAddress(t *testing.T) {
 	options := map[string]interface{}{
 		"protocol": "tcp",
-		"timeout": 5,
+		"interval": "5s",
 	}
 	check := NewDialCheck()
 	if err := check.Configure(options); err == nil {

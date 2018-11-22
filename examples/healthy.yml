@@ -1,10 +1,14 @@
 server:
   listen_on: 127.0.0.1:8199
 
+checker:
+  interval: 10s
+
 checks:
   bazinga:
     type: http
     url: http://bazinga
+    interval: 5s
   google:
     type: http
     url: http://google.com
@@ -12,8 +16,8 @@ checks:
     type: dial
     protocol: udp
     address: 8.8.8.8:53
-    timeout: 5
-  sh:
+    timeout: 5s
+  exec:
     type: command
     command:
       - echo
