@@ -25,7 +25,10 @@ func TestCheckRegistry_CreateCheck(t *testing.T) {
 	registry := NewCheckRegistry()
 	registry.Add("mock", NewTestCheckMock)
 
-	check := registry.CreateAndConfigure("mock", map[string]interface{}{"foo": "bar"})
+	check, err := registry.CreateAndConfigure("mock", map[string]interface{}{"foo": "bar"})
+	if err != nil {
+		log.Fatalf("Configuration failed %s", err)
+	}
 	if !check.(*TestCheckMock).configured {
 		log.Fatal("Get not configured.")
 	}
