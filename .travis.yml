@@ -1,5 +1,24 @@
 language: go
-
 go:
-  - "1.10"
-  - "1.11"
+  - '1.10'
+  - '1.11'
+
+before_install:
+  - go get github.com/mattn/goveralls
+script:
+  - "$GOPATH/bin/goveralls -service=travis-ci"
+
+before_deploy:
+  - go build
+  - export HEALTHY_VERSION=`cat VERSION`
+  - cat healthy | gzip > healthy-$HEALTHY_VERSION.gz
+deploy:
+  provider: releases
+  api_key:
+    secure: RJuIuBLoSlh8fgH28765+y48x7Z0BJjqfv1UaHHbgi8v6W41t7/UEDpAfhCwsrTlRtYvt0UPBQXCWqmL+Q85Jo3EqFuOMlPdS96BBn18wTg4hBmgq6Z5li1jBBQk/2S+zdCyeetBtVqNtjkMuXLk58n/0scsDjGrDmh7P1ooRDiKVK1+2eRzIaGOJyNugEEVs9DGTBZu1n6P+VSFlmaAENemBj3WiPwbqFQc9mM9MnJ3WAuobx6W2PZcofmochboxMUMbrNd+yNguD6iRpQHHXlWF86rTyy5bH1bS1rfpMPrCtN1GWayHVJM3K9CDj3rmZ31sMt4MZcTqcUG8ZnSoIkpJE7t0XUTWdZBzEh0nFSw0+46aEESsigxL6OIjkToZMPfay+eRRI8o/o611ybLFwb5W8RmxViQgcj/syuiTeGBMzTGSO7VZxPESEmyIYlK+pKEQOHjmR+YLKO5xaRY2tstgZunGuBqTnC9w0ewuvij18Qc7U5MFmaFAN67cGZPJX9AfvxkQPrMWXFdmkSs98ey/fCIDH80960h8aaptkywhidSEzO8jntupKBcJ8sy0Zooj+7oy38GLDb0hrobeGYvPKe1baCgT+F0vlz1fZowmWIhPAOT8Eq5iSsRnsGL8U3K9ui6kBx/JX+9rUSubl11vyHxcW5cvoL0DlzR9Q=
+  file: healthy-$HEALTHY_VERSION.gz
+  skip_cleanup: true
+  on:
+    repo: localghost/healthy
+    go: 1.11
+    tags: true
