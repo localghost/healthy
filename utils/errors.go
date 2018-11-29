@@ -9,3 +9,11 @@ func NewNoSuchCheckError(name string) NoSuchCheckError {
 func (e NoSuchCheckError) Error() string {
 	return string(e)
 }
+
+type CheckNotRunError string
+func NewCheckNotRunError(name string) CheckNotRunError {
+	return CheckNotRunError(fmt.Sprintf("Check %s have not been executed yet", name))
+}
+func (e CheckNotRunError) Error() string {
+	return string(e)
+}

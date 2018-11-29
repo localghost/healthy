@@ -29,7 +29,7 @@ type metric struct {
 	value error
 }
 
-func New(checks interface{}) (*Checker, error) {
+func NewChecker(checks interface{}) (*Checker, error) {
 	result := &Checker{
 		tasks:     make(map[string]*Task),
 		metrics:   make(map[string]error),
@@ -92,18 +92,23 @@ func (c *Checker) startChecks() {
 			case m := <-receiver:
 				c.metrics[m.name] = m.value
 			case name := <- c.request:
+				if _, ok := c.responses[name]; !ok {
+					panic("can't respond to non-registered check")
+				}
 				err, ok := c.metrics[name]
 				if !ok {
-					c.responses[name] <- utils.NewNoSuchCheckError(name)
-				} else {
-					c.responses[name] <- err
+					err = utils.NewCheckNotRunError(name)
 				}
+				c.responses[name] <- err
 			}
 		}
 	}()
 }
 
 func (c *Checker) Get(name string) error {
+	if _, ok := c.tasks[name]; !ok {
+		return utils.NewNoSuchCheckError(name)
+	}
 	c.request <- name
 	return <-c.responses[name]
 }
