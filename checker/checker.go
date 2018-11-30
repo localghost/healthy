@@ -78,6 +78,7 @@ func (c *Checker) startChecks() {
 			interval = c.interval
 		}
 		go func(name string, check Check, interval time.Duration) {
+			receiver <- metric{name, check.Run()}
 			for {
 				select {
 				case <- time.After(interval):
