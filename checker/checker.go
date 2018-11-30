@@ -70,22 +70,14 @@ func (c *Checker) parseChecks(checks interface{}) error {
 
 func (c *Checker) startChecks() {
 	receiver := make(chan metric)
-	for name, tasks := range c.tasks {
+	for name, task := range c.tasks {
 		var interval time.Duration
-		if tasks.spec.Interval != time.Duration(0) {
-			interval = tasks.spec.Interval
+		if task.spec.Interval != time.Duration(0) {
+			interval = task.spec.Interval
 		} else {
 			interval = c.interval
 		}
-		go func(name string, check Check, interval time.Duration) {
-			receiver <- metric{name, check.Run()}
-			for {
-				select {
-				case <- time.After(interval):
-					receiver <- metric{name, check.Run()}
-				}
-			}
-		}(name, tasks.check, interval)
+		go c.runCheck(name, task.check, interval, receiver)
 	}
 	go func() {
 		for {
@@ -104,6 +96,16 @@ func (c *Checker) startChecks() {
 			}
 		}
 	}()
+}
+
+func (c *Checker) runCheck(name string, check Check, interval time.Duration, output chan <- metric) {
+	output <- metric{name, check.Run()}
+	for {
+		select {
+		case <- time.After(interval):
+			output <- metric{name, check.Run()}
+		}
+	}
 }
 
 func (c *Checker) Get(name string) error {
