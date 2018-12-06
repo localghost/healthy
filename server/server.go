@@ -10,12 +10,15 @@ import (
 )
 
 type Server struct {
-	router *mux.Router
 	server *http.Server
-	checker *checker.Checker
+	checker checker.Checker
 }
 
-func New(checker *checker.Checker) *Server {
+func New(checker checker.Checker) *Server {
+	if checker == nil {
+		panic("no checker interface provided")
+	}
+
 	result := &Server{
 		checker: checker,
 	}
@@ -24,16 +27,20 @@ func New(checker *checker.Checker) *Server {
 }
 
 func (s *Server) setup() {
-	s.router = mux.NewRouter()
+	s.server = &http.Server{
+		Handler: s.newRouter(),
+		Addr: viper.Get("server.listen_on").(string),
+	}
+}
 
-	v1 := s.router.PathPrefix("/v1/").Subrouter()
+func (s *Server) newRouter() *mux.Router {
+	router := mux.NewRouter()
+
+	v1 := router.PathPrefix("/v1/").Subrouter()
 	v1.HandleFunc("/check/{name}", s.healthCheck)
 	v1.HandleFunc("/status", s.statusCheck)
 
-	s.server = &http.Server{
-		Handler: s.router,
-		Addr: viper.Get("server.listen_on").(string),
-	}
+	return router
 }
 
 func (s *Server) Start() error {
