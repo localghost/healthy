@@ -6,7 +6,13 @@ import (
 	"time"
 )
 
-type Checker struct {
+type Checker interface {
+	Start()
+	Get(name string) error
+	GetAll() error
+}
+
+type CheckerImpl struct {
 	tasks     map[string]*Task
 	metrics   map[string]error
 	request   chan string
@@ -29,8 +35,8 @@ type metric struct {
 	value error
 }
 
-func NewChecker(checks interface{}) (*Checker, error) {
-	result := &Checker{
+func NewChecker(checks interface{}) (Checker, error) {
+	result := &CheckerImpl{
 		tasks:     make(map[string]*Task),
 		metrics:   make(map[string]error),
 		request:   make(chan string),
@@ -43,11 +49,11 @@ func NewChecker(checks interface{}) (*Checker, error) {
 	return result, nil
 }
 
-func (c *Checker) Start() {
+func (c *CheckerImpl) Start() {
 	c.startChecks()
 }
 
-func (c *Checker) parseChecks(checks interface{}) error {
+func (c *CheckerImpl) parseChecks(checks interface{}) error {
 	var specs = make(map[string]Spec)
 	if err := utils.Decode(checks, &specs); err != nil {
 		return err
@@ -68,7 +74,7 @@ func (c *Checker) parseChecks(checks interface{}) error {
 	return nil
 }
 
-func (c *Checker) startChecks() {
+func (c *CheckerImpl) startChecks() {
 	receiver := make(chan metric)
 	for name, task := range c.tasks {
 		var interval time.Duration
@@ -98,7 +104,7 @@ func (c *Checker) startChecks() {
 	}()
 }
 
-func (c *Checker) runCheck(name string, check Check, interval time.Duration, output chan <- metric) {
+func (c *CheckerImpl) runCheck(name string, check Check, interval time.Duration, output chan <- metric) {
 	output <- metric{name, check.Run()}
 	for {
 		select {
@@ -108,7 +114,7 @@ func (c *Checker) runCheck(name string, check Check, interval time.Duration, out
 	}
 }
 
-func (c *Checker) Get(name string) error {
+func (c *CheckerImpl) Get(name string) error {
 	if _, ok := c.tasks[name]; !ok {
 		return utils.NewNoSuchCheckError(name)
 	}
@@ -116,7 +122,7 @@ func (c *Checker) Get(name string) error {
 	return <-c.responses[name]
 }
 
-func (c* Checker) GetAll() error {
+func (c*CheckerImpl) GetAll() error {
 	for name := range c.tasks {
 		if err := c.Get(name); err != nil {
 			return err

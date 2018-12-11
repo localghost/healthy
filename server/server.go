@@ -11,10 +11,10 @@ import (
 
 type Server struct {
 	server *http.Server
-	checker *checker.Checker
+	checker checker.Checker
 }
 
-func New(checker *checker.Checker) *Server {
+func New(checker checker.Checker) *Server {
 	if checker == nil {
 		panic("no checker interface provided")
 	}
