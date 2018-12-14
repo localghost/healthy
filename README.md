@@ -34,8 +34,10 @@ checks:
     command: echo "hello world!"
 ```
 
+Other examples can be found in `examples/`.
+
 ## docker images   
 
 _healthy_ is also released as docker image available for example as `zkostrzewa/healthy:0.1.0`.
 
-Until #20 is fixed docker image requires mounting custom configuration file to `/etc/healthy/healthy.yml` or `/healthy.yml`.
+Until [#20](https://github.com/localghost/healthy/issues/20) is fixed docker image requires mounting custom configuration file to `/etc/healthy/healthy.yml` or `/healthy.yml`.
