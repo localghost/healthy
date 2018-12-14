@@ -1,4 +1,4 @@
-# healthy [![Build Status](https://travis-ci.org/localghost/healthy.svg?branch=master)](https://travis-ci.org/localghost/healthy)
+# healthy [![Build Status](https://travis-ci.org/localghost/healthy.svg?branch=master)](https://travis-ci.org/localghost/healthy) [![Coverage Status](https://coveralls.io/repos/github/localghost/healthy/badge.svg?branch=master)](https://coveralls.io/github/localghost/healthy?branch=master)
 
 _healthy_ is a service that via HTTP REST API exposes current status of configured health checks.
 
