@@ -10,7 +10,7 @@ The same in product, having a single check is very convenient for the Ops team t
 ## configuration
 
 Configuration can be either JSON or YAML or actually anything that is supported by the [spf13/viper](https://github.com/spf13/viper) library.
-Configuration options can also be changed via environment variables, the pattern is `HEALTHY_OPTION_PATH`, e.g.:
+Configuration options can also be set via environment variables with the names of the variables prefixed with `HEALTHY_`, e.g.:
 ```
 HEALTHY_SERVER_LISTEN_ON=localhost:8888 ./healthy --config ./healthy.yml 
 ```
