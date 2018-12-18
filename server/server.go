@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type Server struct {
@@ -51,23 +52,36 @@ func (s *Server) Start() error {
 func (s *Server) healthCheck(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 
-	if checkError := s.checker.Get(vars["name"]); checkError != nil {
+	if checkError := s.check(strings.Split(vars["name"], ",")); checkError != nil {
 		switch checkError.(type) {
 		case utils.NoSuchCheckError:
 			response.WriteHeader(http.StatusNotFound)
 		default:
 			response.WriteHeader(http.StatusExpectationFailed)
 		}
-		response.Write([]byte(checkError.Error()))
+		if _, err := response.Write([]byte(checkError.Error())); err != nil {
+			log.Printf("Error when writing check %s response body [%s]", vars["name"], err)
+		}
 	} else {
 		response.WriteHeader(http.StatusOK)
 	}
 }
 
+func (s *Server) check(checks []string) error {
+	for _, check := range checks {
+		if err := s.checker.Get(check); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Server) statusCheck(response http.ResponseWriter, request *http.Request) {
-	if err := s.checker.GetAll(); err != nil {
+	if checkError := s.checker.GetAll(); checkError != nil {
 		response.WriteHeader(http.StatusExpectationFailed)
-		response.Write([]byte(err.Error()))
+		if _, err := response.Write([]byte(checkError.Error())); err != nil {
+			log.Printf("Error when writing response body [%s]", err)
+		}
 	} else {
 		response.WriteHeader(http.StatusOK)
 	}

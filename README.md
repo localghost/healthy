@@ -36,6 +36,20 @@ checks:
 
 Other examples can be found in `examples/`.
 
+## endpoints
+
+Currently, there are two endpoints available:
+* getting status of selected checks
+  ```bash
+  curl -f http://localhost:8199/v1/check/google
+  curl -f http://localhost:8199/v1/check/google,rabbit
+  ```
+* getting status of all configured checks
+  ```bash
+  curl -f http://localhost:8199/v1/status
+  ```
+In both cases, success is determined by response with status code 200. Other status codes mean the check has failed.
+
 ## docker images   
 
 _healthy_ is also released as docker image available for example as `zkostrzewa/healthy:0.1.0`.
