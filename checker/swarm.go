@@ -1,11 +1,8 @@
 package checker
 
 import (
-	"context"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/localghost/healthy/utils"
-	"net/url"
 )
 
 func NewSwarmCheck() Check {
@@ -26,9 +23,6 @@ func (c *SwarmCheck) Configure(options map[string]interface{}) error {
 	if err := utils.Decode(options, c); err != nil {
 		return err
 	}
-	if _, err := url.Parse(c.Url); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -42,10 +36,10 @@ func (c *SwarmCheck) Run() (err error) {
 	return
 }
 
-func (c *SwarmCheck) createClient() (dockerClient *client.Client, err error) {
+func (c *SwarmCheck) createClient() (*client.Client, error) {
 	settings := []func(*client.Client) error{
 		client.WithHost(c.Host),
 		client.WithVersion(c.Version),
 	}
-	dockerClient, err = client.NewClientWithOpts(settings...)
+	return client.NewClientWithOpts(settings...)
 }
