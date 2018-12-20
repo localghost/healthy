@@ -1,6 +1,11 @@
 package checker
 
 import (
+	"context"
+	"fmt"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
 	"github.com/localghost/healthy/utils"
 )
@@ -19,20 +24,25 @@ type SwarmCheck struct {
 	client *client.Client
 }
 
-func (c *SwarmCheck) Configure(options map[string]interface{}) error {
-	if err := utils.Decode(options, c); err != nil {
-		return err
+func (c *SwarmCheck) Configure(options map[string]interface{}) (err error) {
+	if err = utils.Decode(options, c); err == nil {
+		return
 	}
-	return nil
+	c.client, err = c.createClient()
+	return
 }
 
 func (c *SwarmCheck) Run() (err error) {
-	if c.client == nil {
-		if c.client, err = c.createClient(); err != nil {
-			return
+	var tasks []swarm.Task
+	var filter = filters.NewArgs(filters.Arg("desired-state", "running"))
+	if tasks, err = c.client.TaskList(context.Background(), types.TaskListOptions{Filters: filter}); err != nil {
+		return
+	}
+	for _, task := range tasks {
+		if task.Status.State != task.DesiredState {
+			return fmt.Errorf("expected task %s in state %s but got %s", task.ID, task.DesiredState, task.Status.State)
 		}
 	}
-	// ...
 	return
 }
 
