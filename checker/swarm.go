@@ -25,16 +25,16 @@ type SwarmCheck struct {
 }
 
 func (c *SwarmCheck) Configure(options map[string]interface{}) (err error) {
-	if err = utils.Decode(options, c); err == nil {
+	if err = utils.Decode(options, c); err != nil {
 		return
 	}
-	c.client, err = c.createClient()
+	c.client, err = client.NewClientWithOpts(client.WithHost(c.Host)) // , client.WithVersion(c.Version))
 	return
 }
 
 func (c *SwarmCheck) Run() (err error) {
 	var tasks []swarm.Task
-	var filter = filters.NewArgs(filters.Arg("desired-state", "running"))
+	var filter = filters.NewArgs() // filters.Arg("desired-state", "running"))
 	if tasks, err = c.client.TaskList(context.Background(), types.TaskListOptions{Filters: filter}); err != nil {
 		return
 	}
@@ -44,12 +44,4 @@ func (c *SwarmCheck) Run() (err error) {
 		}
 	}
 	return
-}
-
-func (c *SwarmCheck) createClient() (*client.Client, error) {
-	settings := []func(*client.Client) error{
-		client.WithHost(c.Host),
-		client.WithVersion(c.Version),
-	}
-	return client.NewClientWithOpts(settings...)
 }

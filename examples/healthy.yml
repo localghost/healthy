@@ -25,3 +25,5 @@ checks:
     type: command
     command: "[[ true ]] && echo"
     shell: bash
+  myswarm:
+    type: swarm
