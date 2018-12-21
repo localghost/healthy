@@ -20,6 +20,7 @@ func NewSwarmCheck() Check {
 type SwarmCheck struct {
 	Host string
 	Version string
+	Services []string
 
 	client *client.Client
 }
@@ -43,5 +44,23 @@ func (c *SwarmCheck) Run() (err error) {
 			return fmt.Errorf("expected task %s in state %s but got %s", task.ID, task.DesiredState, task.Status.State)
 		}
 	}
+	//var services []swarm.Service
+	//if services, err = c.getServices(); err != nil {
+	//	return
+	//}
+	//for _, service := range services {
+	//	service.Spec.Mode.Replicated.Replicas
+	//}
 	return
+}
+
+func (c *SwarmCheck) getServices() (services []swarm.Service, err error) {
+	if len(c.Services) == 0 {
+		return c.client.ServiceList(context.Background(), types.ServiceListOptions{})
+	}
+	var kv []filters.KeyValuePair
+	for _, service := range c.Services {
+		kv = append(kv, filters.Arg("name", service))
+	}
+	return c.client.ServiceList(context.Background(), types.ServiceListOptions{Filters: filters.NewArgs(kv...)})
 }
