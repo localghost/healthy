@@ -34,23 +34,25 @@ func (c *SwarmCheck) Configure(options map[string]interface{}) (err error) {
 }
 
 func (c *SwarmCheck) Run() (err error) {
-	var tasks []swarm.Task
-	var filter = filters.NewArgs() // filters.Arg("desired-state", "running"))
-	if tasks, err = c.client.TaskList(context.Background(), types.TaskListOptions{Filters: filter}); err != nil {
+	var services []swarm.Service
+	if services, err = c.getServices(); err != nil {
 		return
 	}
-	for _, task := range tasks {
-		if task.Status.State != task.DesiredState {
-			return fmt.Errorf("expected task %s in state %s but got %s", task.ID, task.DesiredState, task.Status.State)
+	var tasksByService map[string][]swarm.Task
+	if tasksByService, err = c.getTasksByService(); err != nil {
+		return
+	}
+	for _, service := range services {
+		if service.Spec.Mode.Replicated != nil {
+			if err = c.checkReplicatedService(service, tasksByService[service.ID]); err != nil {
+				return
+			}
+		} else {
+			if err = c.checkGlobalService(service, tasksByService[service.ID]); err != nil {
+				return
+			}
 		}
 	}
-	//var services []swarm.Service
-	//if services, err = c.getServices(); err != nil {
-	//	return
-	//}
-	//for _, service := range services {
-	//	service.Spec.Mode.Replicated.Replicas
-	//}
 	return
 }
 
@@ -63,4 +65,39 @@ func (c *SwarmCheck) getServices() (services []swarm.Service, err error) {
 		kv = append(kv, filters.Arg("name", service))
 	}
 	return c.client.ServiceList(context.Background(), types.ServiceListOptions{Filters: filters.NewArgs(kv...)})
+}
+
+func (c *SwarmCheck) getTasksByService() (map[string][]swarm.Task, error) {
+	if tasks, err := c.client.TaskList(context.Background(), types.TaskListOptions{}); err != nil {
+		return nil, err
+	} else {
+		tasksByService := make(map[string][]swarm.Task)
+		for _, task := range tasks {
+			tasksByService[task.ServiceID] = append(tasksByService[task.ServiceID], task)
+		}
+		return tasksByService, nil
+	}
+}
+
+func (c *SwarmCheck) countRunningTasks(tasks []swarm.Task) (count uint32) {
+	for _, task := range tasks {
+		if task.Status.State == swarm.TaskStateRunning {
+			count++
+		}
+	}
+	return
+}
+
+func (c *SwarmCheck) checkReplicatedService(service swarm.Service, tasks []swarm.Task) error {
+	if *service.Spec.Mode.Replicated.Replicas != uint64(c.countRunningTasks(tasks)) {
+		return fmt.Errorf("too few running tasks")
+	}
+	return nil
+}
+
+func (c *SwarmCheck) checkGlobalService(service swarm.Service, tasks []swarm.Task) error {
+	if c.countRunningTasks(tasks) < 1 {
+		return fmt.Errorf("no running tasks for global service")
+	}
+	return nil
 }
