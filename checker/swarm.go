@@ -21,6 +21,7 @@ type SwarmCheck struct {
 	Host string
 	Version string
 	Services []string
+	MinReplicas uint64
 
 	client *client.Client
 }
@@ -79,7 +80,7 @@ func (c *SwarmCheck) getTasksByService() (map[string][]swarm.Task, error) {
 	}
 }
 
-func (c *SwarmCheck) countRunningTasks(tasks []swarm.Task) (count uint32) {
+func (c *SwarmCheck) countRunningTasks(tasks []swarm.Task) (count uint64) {
 	for _, task := range tasks {
 		if task.Status.State == swarm.TaskStateRunning {
 			count++
@@ -89,15 +90,23 @@ func (c *SwarmCheck) countRunningTasks(tasks []swarm.Task) (count uint32) {
 }
 
 func (c *SwarmCheck) checkReplicatedService(service swarm.Service, tasks []swarm.Task) error {
-	if *service.Spec.Mode.Replicated.Replicas != uint64(c.countRunningTasks(tasks)) {
-		return fmt.Errorf("too few running tasks")
+	minReplicas := *service.Spec.Mode.Replicated.Replicas
+	if c.MinReplicas > 0 {
+		minReplicas = c.MinReplicas
+	}
+	if c.countRunningTasks(tasks) < minReplicas {
+		return fmt.Errorf("too few running tasks for service %s", service.Spec.Name)
 	}
 	return nil
 }
 
 func (c *SwarmCheck) checkGlobalService(service swarm.Service, tasks []swarm.Task) error {
-	if c.countRunningTasks(tasks) < 1 {
-		return fmt.Errorf("no running tasks for global service")
+	minReplicas := uint64(1) // get number of active nodes
+	if c.MinReplicas > 0 {
+		minReplicas = c.MinReplicas
+	}
+	if c.countRunningTasks(tasks) < minReplicas {
+		return fmt.Errorf("no running tasks for global service %s", service.Spec.Name)
 	}
 	return nil
 }
