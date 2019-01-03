@@ -1,14 +1,10 @@
 server:
   listen_on: 127.0.0.1:8199
 
-checker:
-  interval: 10s
-
 checks:
   bazinga:
     type: http
     url: http://bazinga
-    interval: 5s
   google:
     type: http
     url: http://google.com

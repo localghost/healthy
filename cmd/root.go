@@ -17,9 +17,9 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		checker.Start()
-
-		server.New(checker).Start()
+		if err := server.New(checker).Start(); err != nil {
+			panic(err)
+		}
 	},
 }
 

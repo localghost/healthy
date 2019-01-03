@@ -32,18 +32,6 @@ func (m *MockChecker) EXPECT() *MockCheckerMockRecorder {
 	return m.recorder
 }
 
-// Start mocks base method
-func (m *MockChecker) Start() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Start")
-}
-
-// Start indicates an expected call of Start
-func (mr *MockCheckerMockRecorder) Start() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockChecker)(nil).Start))
-}
-
 // Get mocks base method
 func (m *MockChecker) Get(name string) error {
 	m.ctrl.T.Helper()
