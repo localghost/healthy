@@ -65,7 +65,20 @@ func (c *SwarmCheck) getServices() (services []swarm.Service, err error) {
 	for _, service := range c.Services {
 		kv = append(kv, filters.Arg("name", service))
 	}
-	return c.client.ServiceList(context.Background(), types.ServiceListOptions{Filters: filters.NewArgs(kv...)})
+	services, err = c.client.ServiceList(context.Background(), types.ServiceListOptions{Filters: filters.NewArgs(kv...)})
+
+	foundServices := make(map[string]struct{})
+	for _, service := range services {
+		foundServices[service.Spec.Name] = struct{}{}
+	}
+	for _, service := range c.Services {
+		if _, ok := foundServices[service]; !ok {
+			services, err = nil, fmt.Errorf("service %s not found", service)
+			return
+		}
+	}
+
+	return
 }
 
 func (c *SwarmCheck) getTasksByService() (map[string][]swarm.Task, error) {

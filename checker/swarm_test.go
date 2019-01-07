@@ -8,7 +8,7 @@ import (
 )
 
 func TestRunningSwarm(t *testing.T) {
-	if !hasSwarmEnabled() {
+	if !isSwarmEnabled() {
 		t.Skip("Swarm not enabled")
 	}
 	options := map[string]interface{}{}
@@ -21,7 +21,23 @@ func TestRunningSwarm(t *testing.T) {
 	}
 }
 
-func hasSwarmEnabled() bool {
+func TestCheckFailureOnMissingService(t *testing.T) {
+	if !isSwarmEnabled() {
+		t.Skip("Swarm not enabled")
+	}
+	options := map[string]interface{}{
+		"services": []string{"missing.service"},
+	}
+	check := NewSwarmCheck()
+	if err := check.Configure(options); err != nil {
+		t.Fatal(err)
+	}
+	if err := check.Run(); err == nil {
+		t.Fatal("Expected test to fail but it succeeded")
+	}
+}
+
+func isSwarmEnabled() bool {
 	cli, err := client.NewClientWithOpts()
 	if err != nil {
 		return false
